@@ -1,0 +1,23 @@
+# Node
+node_modules/
+dist/
+.vite/
+
+# Java builds
+backend/target/
+**/target/
+build/
+**/build/
+.gradle/
+
+# Logs
+*.log
+
+# Env (don’t commit secrets)
+.env
+.env.*
+!.env.example
+
+# App config (ignore local overrides)
+backend/src/main/resources/application.yml
+
