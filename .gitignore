@@ -1,23 +1,43 @@
-# Node
-node_modules/
-dist/
-.vite/
-
-# Java builds
-backend/target/
-**/target/
+# ----------------------
+# Java / Gradle
+# ----------------------
 build/
 **/build/
 .gradle/
+bin/
+*.class
+out/
 
+# ----------------------
 # Logs
+# ----------------------
 *.log
 
-# Env (don’t commit secrets)
+# ----------------------
+# Environment / Secrets
+# ----------------------
 .env
 .env.*
 !.env.example
 
-# App config (ignore local overrides)
-backend/src/main/resources/application.yml
+# ----------------------
+# Spring Boot config
+# ----------------------
+# Ignore local configs with secrets
+application.yml
+application-*.yml
 
+# But allow example configs
+!application-example.yml
+
+# ----------------------
+# IDE (IntelliJ)
+# ----------------------
+.idea/
+*.iml
+
+# ----------------------
+# OS files
+# ----------------------
+.DS_Store
+Thumbs.db
