@@ -186,6 +186,48 @@
       .sparkle.done4 { right: 28px; bottom: 18px; width: 120px; height: 120px; opacity: 1; }
       .sparkle.done5 { left: 40%; top: 120px; width: 90px; height: 90px; opacity: 1; }
       .sparkle.done6 { left: 52%; bottom: 26px; width: 110px; height: 110px; opacity: 1; }
+
+      /* Done screen (clean brand look) */
+      #doneScreen .panelHeader { background: #ffffff; }
+      #doneScreen .dialog { background: linear-gradient(135deg, #ffffff 0%, rgba(255, 204, 0, 0.14) 60%, rgba(1, 92, 181, 0.10) 100%); }
+      #doneScreen .content { padding: 26px; }
+      .doneWrap {
+        width: min(880px, 100%);
+        margin: 0 auto;
+        height: calc(100vh - 64px);
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        text-align: center;
+        gap: 14px;
+      }
+      .doneTitle {
+        font-size: 44px;
+        font-weight: 1000;
+        color: var(--brand-blue);
+        letter-spacing: -1px;
+      }
+      .doneNoLabel {
+        font-size: 22px;
+        font-weight: 1000;
+        color: #111827;
+      }
+      .doneNo {
+        font-size: 120px;
+        font-weight: 1000;
+        letter-spacing: -2px;
+        line-height: 1;
+        color: #111827;
+      }
+      .doneHint {
+        font-size: 28px;
+        font-weight: 1000;
+        color: #111827;
+      }
+      .doneHint strong { color: var(--brand-yellow); -webkit-text-stroke: 1px rgba(17,24,39,0.10); }
+      .doneBtnRow { display:flex; gap: 12px; margin-top: 12px; }
+      #doneScreen #homeBtn, #doneScreen #homeBtnTop { border-radius: 18px; padding: 16px 18px; font-size: 18px; }
+      #doneScreen #homeBtn { min-width: 220px; }
       .totalRow { display: flex; justify-content: space-between; align-items: baseline; }
       .totalLabel { color: var(--muted); font-weight: 800; }
       .totalValue { font-size: 20px; font-weight: 1000; }
@@ -462,22 +504,19 @@
         <div class="panelHeader">
           <div>
             <div class="title">주문 완료</div>
-            <div class="sub">대기번호를 확인해주세요</div>
+            <div class="sub">꼭 기억해주세요</div>
           </div>
           <button class="btn" id="homeBtnTop">홈</button>
         </div>
-        <img class="sparkle done1" id="doneChar1" alt="" />
-        <img class="sparkle done2" id="doneChar2" alt="" />
-        <img class="sparkle done3" id="doneChar3" alt="" />
-        <img class="sparkle done4" id="doneChar4" alt="" />
-        <img class="sparkle done5" id="doneChar5" alt="" />
-        <img class="sparkle done6" id="doneChar6" alt="" />
-        <div class="content" style="display:flex; align-items:center; justify-content:center;">
-          <div style="text-align:center; max-width:720px;">
-            <div style="font-size:14px; color:var(--muted); font-weight:900;">내 번호</div>
-            <div id="doneWaitingNo" style="font-size:96px; font-weight:1000; letter-spacing:-2px; margin: 8px 0;">-</div>
-            <div style="height:18px;"></div>
-            <button class="btn primary" id="homeBtn">홈으로</button>
+        <div class="content">
+          <div class="doneWrap">
+            <div class="doneTitle">주문 완료됐습니다 !!</div>
+            <div class="doneNoLabel">내 번호</div>
+            <div class="doneNo"><span id="doneWaitingNo">-</span> 번</div>
+            <div class="doneHint"><strong>꼭</strong> 기억해주세요 !!!</div>
+            <div class="doneBtnRow">
+              <button class="btn primary" id="homeBtn">홈</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1004,13 +1043,7 @@
       // pay bottom-right character
       document.getElementById("payChar").src = characters[0];
 
-      // done screen background characters
-      document.getElementById("doneChar1").src = characters[2];
-      document.getElementById("doneChar2").src = characters[4];
-      document.getElementById("doneChar3").src = characters[1];
-      document.getElementById("doneChar4").src = characters[0];
-      document.getElementById("doneChar5").src = characters[3];
-      document.getElementById("doneChar6").src = characters[2];
+      // done screen: clean background (no characters)
       renderPhoneValue("");
       renderSet();
       renderJeon();
