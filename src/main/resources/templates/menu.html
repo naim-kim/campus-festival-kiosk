@@ -530,24 +530,28 @@
           { id: "set_big", name: "빅 세트", desc: "큰전1 + 에이드", price: 6500, oldPrice: 6800, type: "SET" }
         ],
         setAddons: [
-          { id: "set_cheese_addon", name: "치즈맛 변경", desc: "+1000", price: 1000 }
+          // price is computed dynamically by base size
+          { id: "set_flavor_cheese", name: "치즈맛", desc: "기본 +500 / 빅 +1000", price: 0 },
+          { id: "set_flavor_honey", name: "허니버터맛", desc: "기본 +500 / 빅 +700", price: 0 }
         ],
         jeon: [
           { id: "jeon_basic", name: "기본 (미니전2)", desc: "", price: 3500, type: "JEON" },
           { id: "jeon_big", name: "빅사이즈 (큰전1)", desc: "", price: 5000, type: "JEON" }
         ],
         jeonAddons: [
-          { id: "jeon_cheese_addon", name: "치즈맛 변경", desc: "+1000", price: 1000 }
+          // price is computed dynamically by size
+          { id: "jeon_flavor_cheese", name: "치즈맛", desc: "기본 +500 / 빅 +1000", price: 0 },
+          { id: "jeon_flavor_honey", name: "허니버터맛", desc: "기본 +500 / 빅 +700", price: 0 }
         ],
         ade: [
           { id: "ade_green", name: "청포도 에이드", desc: "", price: 1800, type: "ADE" },
-          { id: "ade_grapefruit", name: "자몽 에이드", desc: "", price: 1800, type: "ADE" }
+          { id: "ade_grapefruit", name: "자몽 에이드", desc: "", price: 1800, type: "ADE" },
+          { id: "easter_egg_0won", name: "테스트 (0원)", desc: "이스터에그", price: 0, type: "TEST" }
         ],
         toppings: [
           { id: "top_condensed", name: "연유", desc: "+500", price: 500 },
           { id: "top_carbo", name: "까르보불닭", desc: "+500", price: 500 },
-          { id: "top_honey", name: "허니버터", desc: "+700", price: 700 },
-          { id: "top_full", name: "풀토핑", desc: "1700 → 1200", price: 1200, oldPrice: 1700 }
+          { id: "top_honey", name: "허니버터", desc: "+700", price: 700 }
         ]
       };
 
@@ -556,11 +560,11 @@
         setBase: null, // set_basic | set_big | set_cheese? (treated as base + upgrade)
         setAde: null,  // ade_green | ade_grapefruit (required)
         setToppings: new Set(),
-        setCheese: false,
+        setFlavor: null, // "cheese" | "honey" | null
 
         jeonBase: null, // jeon_basic | jeon_big
         jeonToppings: new Set(),
-        jeonCheese: false,
+        jeonFlavor: null, // "cheese" | "honey" | null
 
         cart: [] // { id, name, optionsText, unitPrice, qty }
       };
@@ -591,19 +595,23 @@
         set_big: "/assets/set_menu/big_set.png",
         set_cheese: "/assets/cheese_flavor.png",
         set_cheese_addon: "/assets/cheese_flavor.png",
+        set_flavor_cheese: "/assets/cheese_flavor.png",
+        set_flavor_honey: "/assets/toppings/HoneyButter.png",
         jeon_basic: "/assets/single_menu/basic_size.png",
         jeon_big: "/assets/big_size.png",
         jeon_cheese: "/assets/cheese_flavor.png",
         jeon_cheese_addon: "/assets/cheese_flavor.png",
+        jeon_flavor_cheese: "/assets/cheese_flavor.png",
+        jeon_flavor_honey: "/assets/toppings/HoneyButter.png",
         ade_green: "/assets/ades/grape_ade.png",
         ade_grapefruit: "/assets/ades/grapefruit_ade.png",
+        easter_egg_0won: "/assets/character/character_peaceSign.svg",
         top_condensed: "/assets/toppings/condensedMilk.png",
         top_carbo: "/assets/toppings/CarboBuldalk.png",
-        top_honey: "/assets/toppings/HoneyButter.png",
-        top_full: "/assets/toppings/fullTopping.png"
+        top_honey: "/assets/toppings/HoneyButter.png"
       };
 
-      const RATIO_4_5 = new Set(["set_big", "top_full"]);
+      const RATIO_4_5 = new Set(["set_big"]);
 
       function renderCards(container, items, { selectedIds = new Set(), onClick, showPrice = true }) {
         container.innerHTML = "";
@@ -635,7 +643,7 @@
         state.setBase = null;
         state.setAde = null;
         state.setToppings = new Set();
-        state.setCheese = false;
+        state.setFlavor = null;
         setOptionsEl.style.display = "none";
         renderSet();
       }
@@ -651,7 +659,7 @@
             if (!setAddonEl) {
               const title = document.createElement("div");
               title.className = "sectionTitle";
-              title.textContent = "추가 선택";
+              title.textContent = "맛 변경";
               const hint = document.createElement("div");
               hint.className = "hint";
               hint.textContent = "선택사항";
@@ -667,11 +675,12 @@
         });
 
         if (setAddonEl) {
-          const selectedAddons = new Set(state.setCheese ? ["set_cheese_addon"] : []);
+          const selectedAddons = new Set(state.setFlavor ? [`set_flavor_${state.setFlavor}`] : []);
           renderCards(setAddonEl, MENU.setAddons, {
             selectedIds: selectedAddons,
-            onClick: () => {
-              state.setCheese = !state.setCheese;
+            onClick: (item) => {
+              const next = item.id.replace("set_flavor_", "");
+              state.setFlavor = (state.setFlavor === next) ? null : next;
               renderSet();
             }
           });
@@ -705,10 +714,17 @@
         const ade = MENU.ade.find(x => x.id === state.setAde);
         const tops = MENU.toppings.filter(x => state.setToppings.has(x.id));
         // SET base price already includes ade
-        const unit = base.price + (state.setCheese ? 1000 : 0) + tops.reduce((s,t)=>s+t.price,0);
+        const isBig = base.id === "set_big";
+        const flavorPrice =
+          state.setFlavor === "cheese" ? (isBig ? 1000 : 500) :
+          state.setFlavor === "honey" ? (isBig ? 700 : 500) :
+          0;
+        const unit = base.price + flavorPrice + tops.reduce((s,t)=>s+t.price,0);
         const options = [
           `에이드: ${ade.name}`,
-          state.setCheese ? "치즈맛 변경: +1000" : "치즈맛 변경: 없음",
+          state.setFlavor === "cheese" ? `치즈맛: +${flavorPrice}` :
+          state.setFlavor === "honey" ? `허니버터맛: +${flavorPrice}` :
+          "맛 변경: 없음",
           tops.length ? `토핑: ${tops.map(t=>t.name).join(", ")}` : "토핑: 없음"
         ].join("\n");
         addToCart({
@@ -729,7 +745,7 @@
       function jeonReset() {
         state.jeonBase = null;
         state.jeonToppings = new Set();
-        state.jeonCheese = false;
+        state.jeonFlavor = null;
         jeonOptionsEl.style.display = "none";
         renderJeon();
       }
@@ -744,7 +760,7 @@
             if (!jeonAddonEl) {
               const title = document.createElement("div");
               title.className = "sectionTitle";
-              title.textContent = "추가 선택";
+              title.textContent = "맛 변경";
               const hint = document.createElement("div");
               hint.className = "hint";
               hint.textContent = "선택사항";
@@ -760,11 +776,12 @@
         });
 
         if (jeonAddonEl) {
-          const selectedAddons = new Set(state.jeonCheese ? ["jeon_cheese_addon"] : []);
+          const selectedAddons = new Set(state.jeonFlavor ? [`jeon_flavor_${state.jeonFlavor}`] : []);
           renderCards(jeonAddonEl, MENU.jeonAddons, {
             selectedIds: selectedAddons,
-            onClick: () => {
-              state.jeonCheese = !state.jeonCheese;
+            onClick: (item) => {
+              const next = item.id.replace("jeon_flavor_", "");
+              state.jeonFlavor = (state.jeonFlavor === next) ? null : next;
               renderJeon();
             }
           });
@@ -786,9 +803,16 @@
       document.getElementById("addJeonToCart").addEventListener("click", () => {
         const base = MENU.jeon.find(x => x.id === state.jeonBase);
         const tops = MENU.toppings.filter(x => state.jeonToppings.has(x.id));
-        const unit = base.price + (state.jeonCheese ? 1000 : 0) + tops.reduce((s,t)=>s+t.price,0);
+        const isBig = base.id === "jeon_big";
+        const flavorPrice =
+          state.jeonFlavor === "cheese" ? (isBig ? 1000 : 500) :
+          state.jeonFlavor === "honey" ? (isBig ? 700 : 500) :
+          0;
+        const unit = base.price + flavorPrice + tops.reduce((s,t)=>s+t.price,0);
         const options = [
-          state.jeonCheese ? "치즈맛 변경: +1000" : "치즈맛 변경: 없음",
+          state.jeonFlavor === "cheese" ? `치즈맛: +${flavorPrice}` :
+          state.jeonFlavor === "honey" ? `허니버터맛: +${flavorPrice}` :
+          "맛 변경: 없음",
           tops.length ? `토핑: ${tops.map(t=>t.name).join(", ")}` : "토핑: 없음"
         ].join("\n");
         addToCart({
