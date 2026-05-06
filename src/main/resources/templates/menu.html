@@ -412,6 +412,9 @@
           <div class="tabPane" data-pane="ade" style="display:none;">
             <div class="sectionTitle">에이드</div>
             <div class="hint">선택 후 바로 장바구니에 추가됩니다</div>
+            <div style="display:flex; justify-content:flex-end; margin: 6px 0 10px;">
+              <img id="easterEgg" alt="" style="width:46px; height:46px; object-fit:contain; opacity:0.9; cursor:pointer;" />
+            </div>
             <div class="grid cols2" id="adeBase"></div>
           </div>
         </div>
@@ -531,8 +534,8 @@
         ],
         setAddons: [
           // price is computed dynamically by base size
-          { id: "set_flavor_cheese", name: "치즈맛", desc: "기본 +500 / 빅 +1000", price: 0 },
-          { id: "set_flavor_honey", name: "허니버터맛", desc: "기본 +500 / 빅 +700", price: 0 }
+          { id: "set_flavor_cheese", name: "치즈맛", desc: "기본 +500원 / 빅 +1000원", price: 0 },
+          { id: "set_flavor_honey", name: "허니버터맛", desc: "기본 +500원 / 빅 +1000원", price: 0 }
         ],
         jeon: [
           { id: "jeon_basic", name: "기본 (미니전2)", desc: "", price: 3500, type: "JEON" },
@@ -540,18 +543,17 @@
         ],
         jeonAddons: [
           // price is computed dynamically by size
-          { id: "jeon_flavor_cheese", name: "치즈맛", desc: "기본 +500 / 빅 +1000", price: 0 },
-          { id: "jeon_flavor_honey", name: "허니버터맛", desc: "기본 +500 / 빅 +700", price: 0 }
+          { id: "jeon_flavor_cheese", name: "치즈맛", desc: "기본 +500원 / 빅 +1000원", price: 0 },
+          { id: "jeon_flavor_honey", name: "허니버터맛", desc: "기본 +500원 / 빅 +1000원", price: 0 }
         ],
         ade: [
           { id: "ade_green", name: "청포도 에이드", desc: "", price: 1800, type: "ADE" },
-          { id: "ade_grapefruit", name: "자몽 에이드", desc: "", price: 1800, type: "ADE" },
-          { id: "easter_egg_0won", name: "테스트 (0원)", desc: "이스터에그", price: 0, type: "TEST" }
+          { id: "ade_grapefruit", name: "자몽 에이드", desc: "", price: 1800, type: "ADE" }
         ],
         toppings: [
           { id: "top_condensed", name: "연유", desc: "+500", price: 500 },
           { id: "top_carbo", name: "까르보불닭", desc: "+500", price: 500 },
-          { id: "top_honey", name: "허니버터", desc: "+700", price: 700 }
+          // 허니버터는 '맛 변경'으로 이동
         ]
       };
 
@@ -605,7 +607,6 @@
         jeon_flavor_honey: "/assets/toppings/HoneyButter.png",
         ade_green: "/assets/ades/grape_ade.png",
         ade_grapefruit: "/assets/ades/grapefruit_ade.png",
-        easter_egg_0won: "/assets/character/character_peaceSign.svg",
         top_condensed: "/assets/toppings/condensedMilk.png",
         top_carbo: "/assets/toppings/CarboBuldalk.png",
         top_honey: "/assets/toppings/HoneyButter.png"
@@ -717,7 +718,7 @@
         const isBig = base.id === "set_big";
         const flavorPrice =
           state.setFlavor === "cheese" ? (isBig ? 1000 : 500) :
-          state.setFlavor === "honey" ? (isBig ? 700 : 500) :
+          state.setFlavor === "honey" ? (isBig ? 1000 : 500) :
           0;
         const unit = base.price + flavorPrice + tops.reduce((s,t)=>s+t.price,0);
         const options = [
@@ -806,7 +807,7 @@
         const isBig = base.id === "jeon_big";
         const flavorPrice =
           state.jeonFlavor === "cheese" ? (isBig ? 1000 : 500) :
-          state.jeonFlavor === "honey" ? (isBig ? 700 : 500) :
+          state.jeonFlavor === "honey" ? (isBig ? 1000 : 500) :
           0;
         const unit = base.price + flavorPrice + tops.reduce((s,t)=>s+t.price,0);
         const options = [
@@ -1068,6 +1069,25 @@
       document.getElementById("payChar").src = characters[0];
 
       // done screen: clean background (no characters)
+
+      // easter egg: tap peace sign 5 times to add 0 won item
+      const easterEggEl = document.getElementById("easterEgg");
+      if (easterEggEl) {
+        easterEggEl.src = asset("/assets/character/character_peaceSign.svg");
+        let taps = 0;
+        easterEggEl.addEventListener("click", () => {
+          taps += 1;
+          if (taps >= 5) {
+            taps = 0;
+            addToCart({
+              id: `easter:0won:${Date.now()}`,
+              name: "테스트 (0원)",
+              optionsText: "이스터에그",
+              unitPrice: 0
+            });
+          }
+        });
+      }
       renderPhoneValue("");
       renderSet();
       renderJeon();
