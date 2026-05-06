@@ -20,5 +20,11 @@ public interface WaitingTicketRepository extends JpaRepository<WaitingTicketEnti
     long countByBusinessDateAndStatus(LocalDate businessDate, WaitingStatus status);
 
     long countByBusinessDateAndStatusNot(LocalDate businessDate, WaitingStatus status);
+
+    @Query("select coalesce(sum(o.totalPrice), 0) from WaitingTicketEntity w, OrderEntity o where w.orderId = o.id and w.status = ?1")
+    long sumRevenueByStatus(WaitingStatus status);
+
+    @Query("select coalesce(sum(o.totalPrice), 0) from WaitingTicketEntity w, OrderEntity o where w.orderId = o.id and w.businessDate = ?1 and w.status = ?2")
+    long sumRevenueByDateAndStatus(LocalDate businessDate, WaitingStatus status);
 }
 

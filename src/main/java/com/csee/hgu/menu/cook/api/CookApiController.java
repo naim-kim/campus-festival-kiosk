@@ -16,9 +16,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -119,6 +121,18 @@ public class CookApiController {
         OrderEntity order = orderRepository.findWithItemsById(ticket.orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "order missing for ticket"));
         return toDto(ticket, order);
+    }
+
+    @GetMapping("/revenue")
+    @Transactional(readOnly = true)
+    public Map<String, Long> revenue() {
+        LocalDate today = LocalDate.now(KOREA);
+        long todayRevenue = waitingTicketRepository.sumRevenueByDateAndStatus(today, WaitingStatus.PICKED_UP);
+        long totalRevenue = waitingTicketRepository.sumRevenueByStatus(WaitingStatus.PICKED_UP);
+        Map<String, Long> out = new HashMap<>();
+        out.put("todayRevenue", todayRevenue);
+        out.put("totalRevenue", totalRevenue);
+        return out;
     }
 
     private static CookTicketDto toDto(WaitingTicketEntity ticket, OrderEntity order) {
