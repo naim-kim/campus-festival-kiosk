@@ -267,7 +267,7 @@
       .dialogLeft { background: #0b1220; color: white; }
       .dialogLeft h2 { margin: 0 0 10px; font-size: 22px; }
       .dialogLeft p { margin: 0; color: rgba(255,255,255,0.8); line-height: 1.5; }
-      .waitingBox { margin-top: 18px; padding: 14px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; }
+      .waitingBox { margin-top: 18px; padding: 0; border: none; }
       .waitingBox .big { font-size: 42px; font-weight: 1000; margin-top: 6px; }
       .characterRow { display: flex; gap: 10px; margin-top: 14px; }
       img.character {
@@ -275,9 +275,18 @@
         height: 96px;
         object-fit: contain;
         border-radius: 14px;
-        border: 1px solid rgba(255,255,255,0.12);
+        border: none;
         background: transparent;
       }
+      .waitingHero {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .waitingHeroText { flex: 1; }
+      img.waitingHeroChar { width: 110px; height: 110px; object-fit: contain; border: none; background: transparent; }
       .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
       .key { padding: 16px 0; border-radius: 14px; border: 1px solid var(--border); background: #fff; font-size: 18px; font-weight: 900; cursor: pointer; }
       .phoneRow { display: flex; align-items: center; gap: 10px; margin: 10px 0 14px; }
@@ -329,7 +338,7 @@
       #waitingScreen .phoneHelper {
         margin-top: 8px;
         color: var(--muted);
-        font-size: 14px;
+        font-size: 28px;
         font-weight: 800;
         text-align: center;
       }
@@ -477,9 +486,11 @@
         <div class="dialogBody">
           <div class="dialogLeft">
             <span class="badge">썬더일레븐</span>
-            <h2 style="margin-top:12px;">옥수수전에 연유를 뿌려<br/>달달하게 먹을 상상을 해보세요<br/>벌써부터 행복해지지 않나요</h2>
-            <div class="characterRow" aria-label="characters">
-              <img class="character" id="char1" alt="character" src="" />
+            <div class="waitingHero">
+              <div class="waitingHeroText">
+                <h2 style="margin-top:0;">옥수수전에 연유를 뿌려<br/>달달하게 먹을 상상을 해보세요<br/>벌써부터 행복해지지 않나요</h2>
+              </div>
+              <img class="waitingHeroChar" id="char1" alt="character" src="" />
             </div>
             <div class="waitingBox">
               <div class="big" id="waitingNo2">현재 웨이팅 - 팀</div>
