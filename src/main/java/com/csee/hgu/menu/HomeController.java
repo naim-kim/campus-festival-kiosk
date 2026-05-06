@@ -10,5 +10,10 @@ public class HomeController {
     public String home() {
         return "index";
     }
+
+    @GetMapping("/menu")
+    public String menu() {
+        return "menu";
+    }
 }
 
