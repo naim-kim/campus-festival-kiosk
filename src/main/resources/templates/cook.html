@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="app-base" th:content="@{/}" content="/" />
+    <title>주방</title>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --panel: #0f172a;
+        --card: #111827;
+        --border: rgba(255,255,255,0.10);
+        --text: #e5e7eb;
+        --muted: rgba(229,231,235,0.72);
+        --ok: #22c55e;
+        --warn: #fbbf24;
+        --danger: #ef4444;
+        --brand-yellow: #FFCC00;
+        --brand-blue: #015CB5;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+      .wrap { padding: 12px; max-width: 860px; margin: 0 auto; }
+      .top {
+        display: flex; gap: 10px; align-items: center; justify-content: space-between;
+        padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--panel);
+        position: sticky; top: 0; z-index: 10;
+      }
+      .title { font-weight: 1000; }
+      .tabs { display: flex; gap: 8px; }
+      .tabBtn {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 999px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .tabBtn.active { background: #ffffff; color: #0b1220; border-color: transparent; }
+      .btn {
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text);
+        padding: 10px 12px;
+        border-radius: 12px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      .btn.ok { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.35); }
+      .btn.blue { background: rgba(1,92,181,0.18); border-color: rgba(1,92,181,0.40); }
+      .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      .list { display: grid; gap: 10px; margin-top: 12px; }
+      .card {
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 16px;
+        padding: 12px;
+        display: grid;
+        gap: 10px;
+      }
+      .row { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+      .bigNo { font-size: 44px; font-weight: 1000; letter-spacing: -1px; line-height: 1; }
+      .meta { font-size: 12px; color: var(--muted); white-space: pre-line; }
+      .items { font-size: 14px; line-height: 1.35; }
+      .items b { font-weight: 1000; }
+      .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); font-weight: 900; font-size: 12px; }
+
+      .modalBg {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+        display: none; align-items: center; justify-content: center; padding: 12px;
+      }
+      .modalBg.show { display: flex; }
+      .modal {
+        width: min(520px, 100%);
+        background: #0f172a;
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+      }
+      .modal h3 { margin: 0; font-size: 18px; }
+      .msgBox {
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        border-radius: 14px;
+        padding: 12px;
+        white-space: pre-line;
+        font-weight: 900;
+      }
+      .actions { display: flex; gap: 10px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="top">
+        <div>
+          <div class="title">주방 / 운영</div>
+          <div style="font-size:12px; color:var(--muted);" id="subline">오늘 주문 · 수동 새로고침</div>
+        </div>
+        <div class="tabs">
+          <button class="tabBtn active" data-status="CONFIRMED">접수 완료</button>
+          <button class="tabBtn" data-status="COOKED">조리 완료</button>
+          <button class="tabBtn" data-status="PICKED_UP">수령 완료</button>
+        </div>
+        <button class="btn" id="refreshBtn">새로고침</button>
+      </div>
+
+      <div class="list" id="list"></div>
+    </div>
+
+    <div class="modalBg" id="modalBg" role="dialog" aria-modal="true">
+      <div class="modal">
+        <h3>완료 처리</h3>
+        <div class="msgBox" id="msgBox"></div>
+        <div class="actions">
+          <button class="btn" id="copyBtn">복사하기</button>
+          <a class="btn ok" id="smsBtn" href="#" role="button">문자 보내기</a>
+          <button class="btn" id="closeModal">닫기</button>
+        </div>
+        <div style="font-size:12px; color:var(--muted);">
+          문자 버튼은 <span class="pill">sms:</span> 링크 방식입니다. (번호가 있어야 열립니다)
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const APP_BASE = (document.querySelector('meta[name="app-base"]')?.content || "/").replace(/\/$/, "");
+      const api = (p) => `${APP_BASE}${p.startsWith("/") ? "" : "/"}${p}`;
+
+      let currentStatus = "CONFIRMED";
+      let lastCompletedTicket = null;
+
+      const listEl = document.getElementById("list");
+      const modalBg = document.getElementById("modalBg");
+      const msgBox = document.getElementById("msgBox");
+      const smsBtn = document.getElementById("smsBtn");
+
+      function fmtTime(iso) {
+        if (!iso) return "-";
+        const d = new Date(iso);
+        return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+      }
+
+      function buildItemLines(t) {
+        const lines = [];
+        for (const it of (t.items || [])) {
+          const base = `${it.name} x${it.quantity}`;
+          const opts = [];
+          if (it.adeChoice) opts.push(`에이드: ${it.adeChoice}`);
+          if (it.toppings && it.toppings.length) opts.push(`토핑: ${it.toppings.join(", ")}`);
+          lines.push(opts.length ? `${base}\n  - ${opts.join(" / ")}` : base);
+        }
+        return lines.join("\n");
+      }
+
+      function render(tickets) {
+        listEl.innerHTML = "";
+        const subline = document.getElementById("subline");
+        if (currentStatus === "PICKED_UP") {
+          const sum = tickets.reduce((s, t) => s + (t.totalPrice || 0), 0);
+          subline.textContent = `오늘 완료 ${tickets.length}건 · 매출 ${sum.toLocaleString("ko-KR")}원`;
+        } else {
+          subline.textContent = "오늘 주문 · 수동 새로고침";
+        }
+        if (!tickets.length) {
+          const empty = document.createElement("div");
+          empty.className = "card";
+          empty.innerHTML = `<div class="meta">표시할 주문이 없습니다.</div>`;
+          listEl.appendChild(empty);
+          return;
+        }
+
+        for (const t of tickets) {
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const timeLabel = currentStatus === "PICKED_UP" ? "완료" : "주문";
+          const timeVal = currentStatus === "PICKED_UP" ? fmtTime(t.completedAt) : fmtTime(t.orderedAt);
+
+          card.innerHTML = `
+            <div class="row">
+              <div>
+                <div class="bigNo">${t.waitingNumber}</div>
+                <div class="meta">${timeLabel} 시간: ${timeVal}${t.phoneNumber ? `\n전화: ${t.phoneNumber}` : ""}</div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span class="pill">${currentStatus === "PICKED_UP" ? "완료" : (currentStatus === "COOKED" ? "조리완료" : "접수완료")}</span>
+              </div>
+            </div>
+            <div class="items"><b>메뉴</b>\n${buildItemLines(t)}</div>
+            ${currentStatus === "CONFIRMED" ? `<button class="btn ok" data-action="cooked" data-id="${t.ticketId}">조리완료</button>` : ""}
+            ${currentStatus === "COOKED" ? `<button class="btn ok" data-action="pickedup" data-id="${t.ticketId}">수령완료</button>` : ""}
+            ${(currentStatus === "COOKED" || currentStatus === "PICKED_UP") ? `<button class="btn blue" data-action="reopen" data-id="${t.ticketId}">접수로</button>` : ""}
+          `;
+
+          card.querySelectorAll('button[data-action="cooked"]').forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                const done = await fetch(api(`/api/cook/tickets/${btn.dataset.id}/cooked`), { method: "POST" })
+                  .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+                lastCompletedTicket = done;
+                openDoneModal(done);
+                await load();
+              } catch (e) {
+                alert("완료 처리 실패: " + e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+
+          card.querySelectorAll('button[data-action="pickedup"]').forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                await fetch(api(`/api/cook/tickets/${btn.dataset.id}/picked-up`), { method: "POST" })
+                  .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+                await load();
+              } catch (e) {
+                alert("상태 변경 실패: " + e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+
+          card.querySelectorAll('button[data-action="reopen"]').forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                await fetch(api(`/api/cook/tickets/${btn.dataset.id}/reopen`), { method: "POST" })
+                  .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+                await load();
+              } catch (e) {
+                alert("상태 변경 실패: " + e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+
+          listEl.appendChild(card);
+        }
+      }
+
+      function openDoneModal(ticket) {
+        const msg = `[${ticket.waitingNumber}번]님!\n기다리던 옥수수전… 나왔습니다 😏🌽🔥`;
+        msgBox.textContent = msg;
+
+        if (ticket.phoneNumber) {
+          const body = encodeURIComponent(msg);
+          // iOS/Android compatibility: use ?&body=
+          smsBtn.href = `sms:${ticket.phoneNumber}?&body=${body}`;
+          smsBtn.classList.remove("disabled");
+          smsBtn.style.pointerEvents = "";
+          smsBtn.style.opacity = "1";
+        } else {
+          smsBtn.href = "#";
+          smsBtn.style.pointerEvents = "none";
+          smsBtn.style.opacity = "0.5";
+        }
+
+        modalBg.classList.add("show");
+      }
+
+      async function load() {
+        const url = api(`/api/cook/tickets?status=${encodeURIComponent(currentStatus)}`);
+        const tickets = await fetch(url).then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+        render(tickets);
+      }
+
+      document.querySelectorAll(".tabBtn").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentStatus = btn.dataset.status;
+          await load();
+        });
+      });
+
+      document.getElementById("refreshBtn").addEventListener("click", load);
+      document.getElementById("closeModal").addEventListener("click", () => modalBg.classList.remove("show"));
+      modalBg.addEventListener("click", (e) => { if (e.target === modalBg) modalBg.classList.remove("show"); });
+
+      document.getElementById("copyBtn").addEventListener("click", async () => {
+        const text = msgBox.textContent || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          alert("복사 완료");
+        } catch {
+          // fallback
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+          alert("복사 완료");
+        }
+      });
+
+      load();
+    </script>
+  </body>
+</html>
+

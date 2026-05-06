@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="app-base" th:content="@{/}" content="/" />
+    <title>메뉴 주문</title>
+    <style>
+      :root {
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --border: #e5e7eb;
+        --text: #111827;
+        --muted: #6b7280;
+        --brand-yellow: #FFCC00;
+        --brand-blue: #015CB5;
+        --primary: var(--brand-blue);
+        --primaryText: #ffffff;
+        --accent: var(--brand-yellow);
+        --danger: #dc2626;
+        --shadow: 0 12px 30px rgba(0,0,0,0.08);
+        --radius: 16px;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+      .app {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 1.25fr 0.75fr;
+        gap: 14px;
+        padding: 14px;
+      }
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .panelHeader {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .title { font-size: 16px; font-weight: 700; }
+      .sub { font-size: 12px; color: var(--muted); }
+      .tabs {
+        display: flex;
+        gap: 10px;
+      }
+      .tabBtn {
+        border: 1px solid var(--border);
+        background: #fff;
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+      }
+      .tabBtn.active {
+        background: var(--primary);
+        color: var(--primaryText);
+        border-color: var(--primary);
+      }
+      .content {
+        padding: 14px;
+        overflow: auto;
+        min-height: 0;
+      }
+      .grid { display: grid; gap: 10px; }
+      .grid.cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid.cols2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cardBtn {
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 14px;
+        padding: 12px;
+        cursor: pointer;
+        text-align: left;
+        min-height: 160px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 6px;
+      }
+      .cardImgWrap {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: #f3f4f6;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .cardImgWrap.ratio45 {
+        aspect-ratio: 4 / 5;
+      }
+      img.cardImg {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+      .cardBtn.selected {
+        outline: 3px solid rgba(1, 92, 181, 0.22);
+        border-color: rgba(1, 92, 181, 0.55);
+      }
+      .cardName { font-weight: 800; font-size: 14px; }
+      .cardDesc { font-size: 12px; color: var(--muted); line-height: 1.3; }
+      .priceRow { display: flex; gap: 8px; align-items: baseline; }
+      .price { font-weight: 900; }
+      .oldPrice { font-size: 12px; color: var(--muted); text-decoration: line-through; }
+      .sectionTitle { margin: 14px 0 8px; font-weight: 900; }
+      .hint { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+      .actionsRow { display: flex; gap: 10px; margin-top: 14px; }
+      .actionsRow.right { justify-content: flex-end; }
+      .btn {
+        border: 1px solid var(--border);
+        background: #fff;
+        padding: 12px 14px;
+        border-radius: 14px;
+        font-weight: 900;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn.primary { background: var(--primary); color: var(--primaryText); border-color: var(--primary); }
+      .btn.primary.accent { background: var(--brand-yellow); color: #111827; border-color: var(--brand-yellow); }
+      .btn.danger { background: #fff; color: var(--danger); border-color: rgba(220, 38, 38, 0.35); }
+      .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+      /* Cart */
+      .cartList { display: grid; gap: 10px; }
+      .cartItem {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+      }
+      .cartTop { display: flex; justify-content: space-between; gap: 10px; }
+      .cartName { font-weight: 900; }
+      .cartMeta { font-size: 12px; color: var(--muted); white-space: pre-line; }
+      .qtyRow { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+      .qtyControls { display: flex; gap: 8px; align-items: center; }
+      .qtyBtn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border); background: #fff; font-weight: 900; cursor: pointer; }
+      .qtyNum { min-width: 24px; text-align: center; font-weight: 900; }
+      .cartFooter {
+        margin-top: auto;
+        border-top: 1px solid var(--border);
+        padding: 12px 14px;
+        display: grid;
+        gap: 10px;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.6), rgba(255,255,255,1));
+      }
+      .sparkle {
+        position: absolute;
+        width: 70px;
+        height: 70px;
+        object-fit: contain;
+        opacity: 0.92;
+        pointer-events: none;
+        filter: drop-shadow(0 6px 14px rgba(0,0,0,0.10));
+      }
+      .sparkle.s1 { top: 10px; left: 10px; transform: rotate(-6deg); }
+      .sparkle.s2 { bottom: 10px; left: 12px; transform: rotate(4deg); width: 62px; height: 62px; }
+      .sparkle.s3 { top: 12px; right: 12px; transform: rotate(8deg); width: 64px; height: 64px; }
+      .sparkle.sRight { top: 72px; right: 14px; transform: rotate(6deg); width: 78px; height: 78px; opacity: 0.95; }
+      .sparkle.payBR { right: 18px; bottom: 18px; width: 110px; height: 110px; opacity: 0.98; }
+      .sparkle.done1 { left: 14px; top: 88px; width: 90px; height: 90px; opacity: 1; }
+      .sparkle.done2 { right: 14px; top: 130px; width: 110px; height: 110px; opacity: 1; }
+      .sparkle.done3 { left: 24px; bottom: 18px; width: 120px; height: 120px; opacity: 1; }
+      .sparkle.done4 { right: 28px; bottom: 18px; width: 120px; height: 120px; opacity: 1; }
+      .sparkle.done5 { left: 40%; top: 120px; width: 90px; height: 90px; opacity: 1; }
+      .sparkle.done6 { left: 52%; bottom: 26px; width: 110px; height: 110px; opacity: 1; }
+      .totalRow { display: flex; justify-content: space-between; align-items: baseline; }
+      .totalLabel { color: var(--muted); font-weight: 800; }
+      .totalValue { font-size: 20px; font-weight: 1000; }
+
+      /* Modal-ish screens */
+      .fullScreen {
+        position: fixed;
+        inset: 0;
+        background: rgba(17,24,39,0.4);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
+      }
+      .fullScreen.show { display: flex; }
+      .fullScreen.fullBleed { padding: 0; }
+      .dialog {
+        width: min(980px, 100%);
+        background: white;
+        border-radius: 18px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .dialog.fullBleed {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        border: none;
+      }
+      .dialogBody {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        min-height: 520px;
+      }
+      .dialogLeft, .dialogRight { padding: 18px; }
+      .dialogLeft { background: #0b1220; color: white; }
+      .dialogLeft h2 { margin: 0 0 10px; font-size: 22px; }
+      .dialogLeft p { margin: 0; color: rgba(255,255,255,0.8); line-height: 1.5; }
+      .waitingBox { margin-top: 18px; padding: 14px; border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; }
+      .waitingBox .big { font-size: 42px; font-weight: 1000; margin-top: 6px; }
+      .characterRow { display: flex; gap: 10px; margin-top: 14px; }
+      img.character {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        border-radius: 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: transparent;
+      }
+      .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .key { padding: 16px 0; border-radius: 14px; border: 1px solid var(--border); background: #fff; font-size: 18px; font-weight: 900; cursor: pointer; }
+      .phoneRow { display: flex; align-items: center; gap: 10px; margin: 10px 0 14px; }
+      .phoneInput {
+        flex: 1;
+        padding: 12px 12px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        font-size: clamp(22px, 5.2vw, 36px);
+        font-weight: 900;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
+        font-variant-numeric: tabular-nums;
+      }
+      .smallNote { font-size: 12px; color: var(--muted); margin-top: 10px; }
+      img.qr { width: 240px; height: 240px; border-radius: 14px; border: 1px solid var(--border); background: #fff; object-fit: contain; }
+      .payRow { display: flex; gap: 14px; align-items: center; }
+      /* Pay screen: make QR huge */
+      #payScreen img.qr {
+        width: min(50vw, 520px);
+        height: min(50vw, 520px);
+      }
+      #payScreen .payRow {
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      /* Waiting screen: make input+button match keypad width */
+      #waitingScreen .dialogRight { display: grid; grid-template-rows: auto auto 1fr auto auto; }
+      #waitingScreen .phoneRow { width: 100%; }
+      #waitingScreen .keypad { width: 100%; }
+      #waitingScreen .actionsRow { width: 100%; }
+      #waitingScreen #waitingBtn {
+        width: 100%;
+        padding: 18px 14px;
+        font-size: 18px;
+        border-radius: 16px;
+      }
+      #waitingScreen .closeCorner {
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        z-index: 30;
+      }
+      #waitingScreen .phoneHelper {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 800;
+        text-align: center;
+      }
+      #waitingScreen .phoneInput { text-align: left; }
+      #waitingScreen .phoneInput.centered { text-align: center; font-size: clamp(20px, 4.6vw, 32px); }
+
+      #waitingScreen .characterRow { justify-content: center; }
+
+      /* Pay screen typography */
+      #payScreen .sub { font-size: 18px; font-weight: 900; }
+      #payScreen .paySum { font-size: 54px; }
+      #payScreen #paidBtn { padding: 18px 18px; font-size: 20px; border-radius: 18px; }
+      .paySum { font-size: 34px; font-weight: 1000; }
+      .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); font-weight: 900; }
+      .homeBtn {
+        position: fixed;
+        right: 14px;
+        bottom: 14px;
+        z-index: 20;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- Left: menu -->
+      <section class="panel" aria-label="menu" style="position:relative;">
+        <img class="sparkle s2" id="menuChar2" alt="" />
+        <img class="sparkle sRight" id="menuCharRight" alt="" />
+        <div class="panelHeader">
+          <div>
+            <div class="title">주문</div>
+            <div class="sub">SET / 옥수수전 / 에이드</div>
+          </div>
+          <div class="tabs" role="tablist" aria-label="menu categories">
+            <button class="tabBtn active" data-tab="set" role="tab">SET</button>
+            <button class="tabBtn" data-tab="jeon" role="tab">옥수수전</button>
+            <button class="tabBtn" data-tab="ade" role="tab">에이드</button>
+          </div>
+        </div>
+
+        <div class="content">
+          <!-- SET -->
+          <div class="tabPane" data-pane="set">
+            <div class="sectionTitle">세트 선택</div>
+            <div class="grid cols3" id="setBase"></div>
+
+            <div id="setOptions" style="display:none;">
+              <div class="sectionTitle">에이드 선택 (필수)</div>
+              <div class="grid cols2" id="setAdeRequired"></div>
+
+              <div class="sectionTitle">토핑 추가 (선택)</div>
+              <div class="hint">여러 개 선택 가능</div>
+              <div class="grid cols3" id="setToppings"></div>
+
+              <div class="actionsRow right">
+                <button class="btn primary" id="addSetToCart">장바구니 추가</button>
+                <button class="btn" id="resetSet">초기화</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 옥수수전 -->
+          <div class="tabPane" data-pane="jeon" style="display:none;">
+            <div class="sectionTitle">옥수수전 선택</div>
+            <div class="grid cols3" id="jeonBase"></div>
+
+            <div id="jeonOptions" style="display:none;">
+              <div class="sectionTitle">토핑 추가 (선택)</div>
+              <div class="hint">여러 개 선택 가능</div>
+              <div class="grid cols3" id="jeonToppings"></div>
+
+              <div class="actionsRow right">
+                <button class="btn primary" id="addJeonToCart">장바구니 추가</button>
+                <button class="btn" id="resetJeon">초기화</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 에이드 -->
+          <div class="tabPane" data-pane="ade" style="display:none;">
+            <div class="sectionTitle">에이드</div>
+            <div class="hint">선택 후 바로 장바구니에 추가됩니다</div>
+            <div class="grid cols2" id="adeBase"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right: cart -->
+      <aside class="panel" aria-label="cart" style="position:relative;">
+        <div class="panelHeader">
+          <div>
+            <div class="title">장바구니</div>
+            <div class="sub" id="cartSub">담긴 메뉴가 없습니다</div>
+          </div>
+          <button class="btn danger" id="clearCart" disabled>비우기</button>
+        </div>
+        <div class="content">
+          <div class="cartList" id="cartList"></div>
+        </div>
+        <div class="cartFooter">
+          <div class="totalRow">
+            <div class="totalLabel">총액</div>
+            <div class="totalValue" id="cartTotal">0원</div>
+          </div>
+          <button class="btn primary" id="orderBtn" disabled>주문하기</button>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Payment / waiting number screen -->
+    <div class="fullScreen fullBleed" id="payScreen" role="dialog" aria-modal="true">
+      <div class="dialog fullBleed">
+        <div class="panelHeader">
+          <div>
+            <div class="title">결제</div>
+            <div class="sub">QR 코드를 스캔하고 결제 후 “결제완료”를 눌러주세요</div>
+          </div>
+          <button class="btn" id="closePay">닫기</button>
+        </div>
+        <img class="sparkle payBR" id="payChar" alt="" />
+        <div class="content">
+          <div class="payRow">
+            <img class="qr" id="qrImg" alt="QR" src="" />
+            <div>
+              <div class="sub">총 주문 금액</div>
+              <div class="paySum" id="payTotal">0원</div>
+              <div style="height:12px;"></div>
+              <button class="btn primary" id="paidBtn">결제완료</button>
+            </div>
+          </div>
+            <div class="smallNote">
+              결제완료를 누르면 대기번호가 발급됩니다.
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Waiting page -->
+    <div class="fullScreen fullBleed" id="waitingScreen" role="dialog" aria-modal="true">
+      <div class="dialog fullBleed">
+        <button class="btn closeCorner" id="closeWaiting">닫기</button>
+        <div class="dialogBody">
+          <div class="dialogLeft">
+            <span class="badge">썬더일레븐</span>
+            <h2 style="margin-top:12px;">옥수수전에 연유를 뿌려<br/>달달하게 먹을 상상을 해보세요<br/>벌써부터 행복해지지 않나요</h2>
+            <div class="characterRow" aria-label="characters">
+              <img class="character" id="char1" alt="character" src="" />
+            </div>
+            <div class="waitingBox">
+              <div class="big" id="waitingNo2">현재 웨이팅 - 팀</div>
+            </div>
+          </div>
+          <div class="dialogRight">
+            <div class="sectionTitle">전화번호 입력 (선택)</div>
+            <div class="phoneRow">
+              <input class="phoneInput" id="phoneInput" inputmode="numeric" placeholder="010-____-____" maxlength="13" />
+            </div>
+            <div class="phoneHelper">교수님 오늘은 수업 째고 옥수수전 먹을거에요</div>
+            <div class="keypad" id="keypad"></div>
+            <div class="actionsRow">
+              <button class="btn primary" id="waitingBtn">웨이팅하기</button>
+            </div>
+            <div class="smallNote">입력 안 해도 주문 가능</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Done page -->
+    <div class="fullScreen fullBleed" id="doneScreen" role="dialog" aria-modal="true">
+      <div class="dialog fullBleed">
+        <div class="panelHeader">
+          <div>
+            <div class="title">주문 완료</div>
+            <div class="sub">대기번호를 확인해주세요</div>
+          </div>
+          <button class="btn" id="homeBtnTop">홈</button>
+        </div>
+        <img class="sparkle done1" id="doneChar1" alt="" />
+        <img class="sparkle done2" id="doneChar2" alt="" />
+        <img class="sparkle done3" id="doneChar3" alt="" />
+        <img class="sparkle done4" id="doneChar4" alt="" />
+        <img class="sparkle done5" id="doneChar5" alt="" />
+        <img class="sparkle done6" id="doneChar6" alt="" />
+        <div class="content" style="display:flex; align-items:center; justify-content:center;">
+          <div style="text-align:center; max-width:720px;">
+            <div style="font-size:14px; color:var(--muted); font-weight:900;">내 번호</div>
+            <div id="doneWaitingNo" style="font-size:96px; font-weight:1000; letter-spacing:-2px; margin: 8px 0;">-</div>
+            <div style="height:18px;"></div>
+            <button class="btn primary" id="homeBtn">홈으로</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ======= Static menu definition (backend 연결은 다음 단계에서) =======
+      const MENU = {
+        set: [
+          { id: "set_basic", name: "기본 세트", desc: "미니전2 + 에이드", price: 5000, oldPrice: 5300, type: "SET" },
+          { id: "set_big", name: "빅 세트", desc: "큰전1 + 에이드", price: 6500, oldPrice: 6800, type: "SET" }
+        ],
+        setAddons: [
+          { id: "set_cheese_addon", name: "치즈맛 변경", desc: "+1000", price: 1000 }
+        ],
+        jeon: [
+          { id: "jeon_basic", name: "기본 (미니전2)", desc: "", price: 3500, type: "JEON" },
+          { id: "jeon_big", name: "빅사이즈 (큰전1)", desc: "", price: 5000, type: "JEON" }
+        ],
+        jeonAddons: [
+          { id: "jeon_cheese_addon", name: "치즈맛 변경", desc: "+1000", price: 1000 }
+        ],
+        ade: [
+          { id: "ade_green", name: "청포도 에이드", desc: "", price: 1800, type: "ADE" },
+          { id: "ade_grapefruit", name: "자몽 에이드", desc: "", price: 1800, type: "ADE" }
+        ],
+        toppings: [
+          { id: "top_condensed", name: "연유", desc: "+500", price: 500 },
+          { id: "top_carbo", name: "까르보불닭", desc: "+500", price: 500 },
+          { id: "top_honey", name: "허니버터", desc: "+700", price: 700 },
+          { id: "top_full", name: "풀토핑", desc: "1700 → 1200", price: 1200, oldPrice: 1700 }
+        ]
+      };
+
+      // ======= UI State =======
+      const state = {
+        setBase: null, // set_basic | set_big | set_cheese? (treated as base + upgrade)
+        setAde: null,  // ade_green | ade_grapefruit (required)
+        setToppings: new Set(),
+        setCheese: false,
+
+        jeonBase: null, // jeon_basic | jeon_big
+        jeonToppings: new Set(),
+        jeonCheese: false,
+
+        cart: [] // { id, name, optionsText, unitPrice, qty }
+      };
+
+      function fmtWon(n) { return `${n.toLocaleString("ko-KR")}원`; }
+
+      // ======= Tabs =======
+      document.querySelectorAll(".tabBtn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          const tab = btn.dataset.tab;
+          document.querySelectorAll(".tabPane").forEach(p => {
+            p.style.display = (p.dataset.pane === tab) ? "" : "none";
+          });
+        });
+      });
+
+      // ======= Render helpers =======
+      const APP_BASE = (document.querySelector('meta[name="app-base"]')?.content || "/").replace(/\/$/, "");
+
+      function asset(path) {
+        return `${APP_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+      }
+
+      const IMAGE_MAP = {
+        set_basic: "/assets/set_menu/basic_set.png",
+        set_big: "/assets/set_menu/big_set.png",
+        set_cheese: "/assets/cheese_flavor.png",
+        set_cheese_addon: "/assets/cheese_flavor.png",
+        jeon_basic: "/assets/single_menu/basic_size.png",
+        jeon_big: "/assets/big_size.png",
+        jeon_cheese: "/assets/cheese_flavor.png",
+        jeon_cheese_addon: "/assets/cheese_flavor.png",
+        ade_green: "/assets/ades/grape_ade.png",
+        ade_grapefruit: "/assets/ades/grapefruit_ade.png",
+        top_condensed: "/assets/toppings/condensedMilk.png",
+        top_carbo: "/assets/toppings/CarboBuldalk.png",
+        top_honey: "/assets/toppings/HoneyButter.png",
+        top_full: "/assets/toppings/fullTopping.png"
+      };
+
+      const RATIO_4_5 = new Set(["set_big", "top_full"]);
+
+      function renderCards(container, items, { selectedIds = new Set(), onClick, showPrice = true }) {
+        container.innerHTML = "";
+        items.forEach(item => {
+          const el = document.createElement("button");
+          el.type = "button";
+          el.className = "cardBtn" + (selectedIds.has(item.id) ? " selected" : "");
+          const imgSrc = IMAGE_MAP[item.id] ? asset(IMAGE_MAP[item.id]) : "";
+          const ratioClass = RATIO_4_5.has(item.id) ? "ratio45" : "";
+          el.innerHTML = `
+            ${imgSrc ? `<div class="cardImgWrap ${ratioClass}"><img class="cardImg" alt="" src="${imgSrc}" /></div>` : ""}
+            <div class="cardName">${item.name}</div>
+            ${showPrice ? `<div class="priceRow"><div class="price">${fmtWon(item.price)}</div>${item.oldPrice ? `<div class="oldPrice">${fmtWon(item.oldPrice)}</div>` : ""}</div>` : ""}
+            ${item.desc ? `<div class="cardDesc">${item.desc}</div>` : ""}
+          `;
+          el.addEventListener("click", () => onClick(item));
+          container.appendChild(el);
+        });
+      }
+
+      // ======= SET =======
+      const setBaseEl = document.getElementById("setBase");
+      const setOptionsEl = document.getElementById("setOptions");
+      const setAdeEl = document.getElementById("setAdeRequired");
+      const setToppingsEl = document.getElementById("setToppings");
+      let setAddonEl = null;
+
+      function setReset() {
+        state.setBase = null;
+        state.setAde = null;
+        state.setToppings = new Set();
+        state.setCheese = false;
+        setOptionsEl.style.display = "none";
+        renderSet();
+      }
+
+      function renderSet() {
+        const selected = new Set(state.setBase ? [state.setBase] : []);
+        renderCards(setBaseEl, MENU.set, {
+          selectedIds: selected,
+          onClick: (item) => {
+            state.setBase = item.id;
+            setOptionsEl.style.display = "";
+            // mount addon section once
+            if (!setAddonEl) {
+              const title = document.createElement("div");
+              title.className = "sectionTitle";
+              title.textContent = "추가 선택";
+              const hint = document.createElement("div");
+              hint.className = "hint";
+              hint.textContent = "선택사항";
+              setAddonEl = document.createElement("div");
+              setAddonEl.className = "grid cols3";
+              setAddonEl.id = "setAddons";
+              setOptionsEl.prepend(setAddonEl);
+              setOptionsEl.prepend(hint);
+              setOptionsEl.prepend(title);
+            }
+            renderSet();
+          }
+        });
+
+        if (setAddonEl) {
+          const selectedAddons = new Set(state.setCheese ? ["set_cheese_addon"] : []);
+          renderCards(setAddonEl, MENU.setAddons, {
+            selectedIds: selectedAddons,
+            onClick: () => {
+              state.setCheese = !state.setCheese;
+              renderSet();
+            }
+          });
+        }
+
+        const selectedAde = new Set(state.setAde ? [state.setAde] : []);
+        renderCards(setAdeEl, MENU.ade, {
+          selectedIds: selectedAde,
+          showPrice: false,
+          onClick: (item) => {
+            state.setAde = item.id;
+            renderSet();
+          }
+        });
+
+        renderCards(setToppingsEl, MENU.toppings, {
+          selectedIds: state.setToppings,
+          onClick: (item) => {
+            if (state.setToppings.has(item.id)) state.setToppings.delete(item.id);
+            else state.setToppings.add(item.id);
+            renderSet();
+          }
+        });
+
+        document.getElementById("addSetToCart").disabled = !(state.setBase && state.setAde);
+      }
+
+      document.getElementById("resetSet").addEventListener("click", setReset);
+      document.getElementById("addSetToCart").addEventListener("click", () => {
+        const base = MENU.set.find(x => x.id === state.setBase);
+        const ade = MENU.ade.find(x => x.id === state.setAde);
+        const tops = MENU.toppings.filter(x => state.setToppings.has(x.id));
+        // SET base price already includes ade
+        const unit = base.price + (state.setCheese ? 1000 : 0) + tops.reduce((s,t)=>s+t.price,0);
+        const options = [
+          `에이드: ${ade.name}`,
+          state.setCheese ? "치즈맛 변경: +1000" : "치즈맛 변경: 없음",
+          tops.length ? `토핑: ${tops.map(t=>t.name).join(", ")}` : "토핑: 없음"
+        ].join("\n");
+        addToCart({
+          id: `set:${base.id}:${ade.id}:${tops.map(t=>t.id).sort().join("+")}`,
+          name: base.name,
+          optionsText: options,
+          unitPrice: unit
+        });
+        setReset();
+      });
+
+      // ======= JEON =======
+      const jeonBaseEl = document.getElementById("jeonBase");
+      const jeonOptionsEl = document.getElementById("jeonOptions");
+      const jeonToppingsEl = document.getElementById("jeonToppings");
+      let jeonAddonEl = null;
+
+      function jeonReset() {
+        state.jeonBase = null;
+        state.jeonToppings = new Set();
+        state.jeonCheese = false;
+        jeonOptionsEl.style.display = "none";
+        renderJeon();
+      }
+
+      function renderJeon() {
+        const selected = new Set(state.jeonBase ? [state.jeonBase] : []);
+        renderCards(jeonBaseEl, MENU.jeon, {
+          selectedIds: selected,
+          onClick: (item) => {
+            state.jeonBase = item.id;
+            jeonOptionsEl.style.display = "";
+            if (!jeonAddonEl) {
+              const title = document.createElement("div");
+              title.className = "sectionTitle";
+              title.textContent = "추가 선택";
+              const hint = document.createElement("div");
+              hint.className = "hint";
+              hint.textContent = "선택사항";
+              jeonAddonEl = document.createElement("div");
+              jeonAddonEl.className = "grid cols3";
+              jeonAddonEl.id = "jeonAddons";
+              jeonOptionsEl.prepend(jeonAddonEl);
+              jeonOptionsEl.prepend(hint);
+              jeonOptionsEl.prepend(title);
+            }
+            renderJeon();
+          }
+        });
+
+        if (jeonAddonEl) {
+          const selectedAddons = new Set(state.jeonCheese ? ["jeon_cheese_addon"] : []);
+          renderCards(jeonAddonEl, MENU.jeonAddons, {
+            selectedIds: selectedAddons,
+            onClick: () => {
+              state.jeonCheese = !state.jeonCheese;
+              renderJeon();
+            }
+          });
+        }
+
+        renderCards(jeonToppingsEl, MENU.toppings, {
+          selectedIds: state.jeonToppings,
+          onClick: (item) => {
+            if (state.jeonToppings.has(item.id)) state.jeonToppings.delete(item.id);
+            else state.jeonToppings.add(item.id);
+            renderJeon();
+          }
+        });
+
+        document.getElementById("addJeonToCart").disabled = !state.jeonBase;
+      }
+
+      document.getElementById("resetJeon").addEventListener("click", jeonReset);
+      document.getElementById("addJeonToCart").addEventListener("click", () => {
+        const base = MENU.jeon.find(x => x.id === state.jeonBase);
+        const tops = MENU.toppings.filter(x => state.jeonToppings.has(x.id));
+        const unit = base.price + (state.jeonCheese ? 1000 : 0) + tops.reduce((s,t)=>s+t.price,0);
+        const options = [
+          state.jeonCheese ? "치즈맛 변경: +1000" : "치즈맛 변경: 없음",
+          tops.length ? `토핑: ${tops.map(t=>t.name).join(", ")}` : "토핑: 없음"
+        ].join("\n");
+        addToCart({
+          id: `jeon:${base.id}:${tops.map(t=>t.id).sort().join("+")}`,
+          name: base.name,
+          optionsText: options,
+          unitPrice: unit
+        });
+        jeonReset();
+      });
+
+      // ======= ADE =======
+      const adeBaseEl = document.getElementById("adeBase");
+      function renderAde() {
+        renderCards(adeBaseEl, MENU.ade, {
+          selectedIds: new Set(),
+          onClick: (item) => {
+            addToCart({
+              id: `ade:${item.id}`,
+              name: item.name,
+              optionsText: "",
+              unitPrice: item.price
+            });
+          }
+        });
+      }
+
+      // ======= Cart =======
+      const cartListEl = document.getElementById("cartList");
+      const cartTotalEl = document.getElementById("cartTotal");
+      const cartSubEl = document.getElementById("cartSub");
+      const orderBtnEl = document.getElementById("orderBtn");
+      const clearCartEl = document.getElementById("clearCart");
+
+      function cartTotal() {
+        return state.cart.reduce((s, it) => s + (it.unitPrice * it.qty), 0);
+      }
+
+      function addToCart(item) {
+        const existing = state.cart.find(x => x.id === item.id);
+        if (existing) existing.qty += 1;
+        else state.cart.push({ ...item, qty: 1 });
+        renderCart();
+      }
+
+      function renderCart() {
+        cartListEl.innerHTML = "";
+        state.cart.forEach((it, idx) => {
+          const el = document.createElement("div");
+          el.className = "cartItem";
+          el.innerHTML = `
+            <div class="cartTop">
+              <div>
+                <div class="cartName">${it.name}</div>
+                <div class="cartMeta">${it.optionsText || ""}</div>
+              </div>
+              <button class="btn danger" data-action="remove" data-idx="${idx}">삭제</button>
+            </div>
+            <div class="qtyRow">
+              <div style="font-weight:900;">${fmtWon(it.unitPrice)} <span style="color:var(--muted); font-weight:800;">/ 1개</span></div>
+              <div class="qtyControls">
+                <button class="qtyBtn" data-action="dec" data-idx="${idx}">-</button>
+                <div class="qtyNum">${it.qty}</div>
+                <button class="qtyBtn" data-action="inc" data-idx="${idx}">+</button>
+              </div>
+            </div>
+          `;
+          cartListEl.appendChild(el);
+        });
+
+        cartListEl.querySelectorAll("button[data-action]").forEach(btn => {
+          const idx = Number(btn.dataset.idx);
+          const action = btn.dataset.action;
+          btn.addEventListener("click", () => {
+            if (action === "inc") state.cart[idx].qty += 1;
+            if (action === "dec") state.cart[idx].qty = Math.max(1, state.cart[idx].qty - 1);
+            if (action === "remove") state.cart.splice(idx, 1);
+            renderCart();
+          });
+        });
+
+        const total = cartTotal();
+        cartTotalEl.textContent = fmtWon(total);
+        cartSubEl.textContent = state.cart.length ? `총 ${state.cart.reduce((s,i)=>s+i.qty,0)}개` : "담긴 메뉴가 없습니다";
+        orderBtnEl.disabled = state.cart.length === 0;
+        clearCartEl.disabled = state.cart.length === 0;
+      }
+
+      clearCartEl.addEventListener("click", () => {
+        state.cart = [];
+        renderCart();
+      });
+
+      // ======= Order flow (UI only for now) =======
+      const payScreen = document.getElementById("payScreen");
+      const waitingScreen = document.getElementById("waitingScreen");
+      const doneScreen = document.getElementById("doneScreen");
+      const payTotalEl = document.getElementById("payTotal");
+      const waitingNo2El = document.getElementById("waitingNo2");
+      const doneWaitingNoEl = document.getElementById("doneWaitingNo");
+      let lastOrderId = null;
+      let lastTicketId = null;
+      let lastWaitingNumber = null;
+
+      orderBtnEl.addEventListener("click", () => {
+        // create order in backend
+        const payload = {
+          items: state.cart.map(it => ({
+            menuCode: it.id.split(":")[0] + "_" + it.id.split(":")[1], // best-effort code
+            menuName: it.name,
+            unitPrice: it.unitPrice,
+            quantity: it.qty,
+            adeChoice: (it.optionsText || "").includes("에이드:") ? (it.optionsText.split("\n")[0].replace("에이드:","").trim()) : null,
+            toppings: (it.optionsText || "").includes("토핑:") ? (it.optionsText.split("\n").find(l=>l.startsWith("토핑:")) || "토핑: 없음")
+              .replace("토핑:","").split(",").map(s=>s.trim()).filter(s=>s && s!=="없음") : []
+          }))
+        };
+
+        fetch(asset("/api/orders"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        })
+          .then(async (r) => {
+            if (!r.ok) throw new Error(await r.text());
+            return r.json();
+          })
+          .then((res) => {
+            lastOrderId = res.orderId;
+            payTotalEl.textContent = fmtWon(res.totalPrice || cartTotal());
+            waitingNo2El.textContent = "-";
+            payScreen.classList.add("show");
+          })
+          .catch((e) => {
+            alert("주문 생성 실패: " + e.message);
+          });
+      });
+
+      document.getElementById("closePay").addEventListener("click", () => payScreen.classList.remove("show"));
+
+      document.getElementById("paidBtn").addEventListener("click", () => {
+        if (!lastOrderId) return;
+        fetch(asset(`/api/orders/${lastOrderId}/paid`), { method: "POST" })
+          .then(async (r) => {
+            if (!r.ok) throw new Error(await r.text());
+            return r.json();
+          })
+          .then((res) => {
+            lastTicketId = res.waitingTicketId;
+            lastWaitingNumber = res.waitingNumber;
+            payScreen.classList.remove("show");
+            refreshWaitingCount();
+            waitingScreen.classList.add("show");
+          })
+          .catch((e) => alert("결제완료 처리 실패: " + e.message));
+      });
+
+      document.getElementById("closeWaiting").addEventListener("click", () => waitingScreen.classList.remove("show"));
+
+      // keypad
+      const keypadEl = document.getElementById("keypad");
+      const phoneInput = document.getElementById("phoneInput");
+      const keys = ["1","2","3","4","5","6","7","8","9","retype","0","back"];
+      function phoneDigitsOnly(v) {
+        return (v || "").replaceAll(/[^0-9]/g, "");
+      }
+
+      function renderPhoneValue(tailDigits) {
+        const t = (tailDigits || "").slice(0, 8);
+        let shown = (t.length <= 4) ? `010-${t}` : `010-${t.slice(0,4)}-${t.slice(4)}`;
+
+        if (t.length === 8) phoneInput.classList.add("centered");
+        else phoneInput.classList.remove("centered");
+
+        if (t.length === 8) shown = shown.replaceAll("-", " - ");
+
+        phoneInput.value = shown;
+      }
+
+      function getTailDigitsFromInput() {
+        const digits = phoneDigitsOnly(phoneInput.value);
+        return digits.startsWith("010") ? digits.slice(3) : digits;
+      }
+
+      keys.forEach(k => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "key";
+        b.textContent = (k === "retype") ? "↺" : (k === "back" ? "⌫" : k);
+        b.addEventListener("click", () => {
+          if (k === "retype") renderPhoneValue("");
+          else if (k === "back") renderPhoneValue(getTailDigitsFromInput().slice(0, -1));
+          else renderPhoneValue(getTailDigitsFromInput() + k);
+        });
+        keypadEl.appendChild(b);
+      });
+
+      document.getElementById("waitingBtn").addEventListener("click", () => {
+        const digits = phoneDigitsOnly(phoneInput.value);
+        const phone = digits.length >= 11 ? `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}` : "";
+        if (!lastTicketId) {
+          waitingScreen.classList.remove("show");
+          doneWaitingNoEl.textContent = lastWaitingNumber ? String(lastWaitingNumber) : "-";
+          doneScreen.classList.add("show");
+          state.cart = [];
+          renderCart();
+          return;
+        }
+        fetch(asset(`/api/waiting/${lastTicketId}/confirm`), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phoneNumber: phone })
+        })
+          .then(async (r) => {
+            if (!r.ok) throw new Error(await r.text());
+            return r.json();
+          })
+          .then(() => {
+            waitingScreen.classList.remove("show");
+            doneWaitingNoEl.textContent = lastWaitingNumber ? String(lastWaitingNumber) : "-";
+            doneScreen.classList.add("show");
+            state.cart = [];
+            renderCart();
+          })
+          .catch((e) => alert("웨이팅 저장 실패: " + e.message));
+      });
+
+      function goHomeRefresh() {
+        // Force reload so kiosk always resets state
+        window.location.href = asset("/menu") + "?t=" + Date.now();
+      }
+      document.getElementById("homeBtn").addEventListener("click", goHomeRefresh);
+      document.getElementById("homeBtnTop").addEventListener("click", goHomeRefresh);
+
+      // init
+      document.getElementById("qrImg").src = asset("/assets/pay.png");
+      const characters = [
+        "/assets/character/character_holdingCorn.svg",
+        "/assets/character/character_thumbsUp.svg",
+        "/assets/character/character_peaceSign.svg",
+        "/assets/character/character_sparklingEyes.svg",
+        "/assets/character/character_yey.svg"
+      ].map(asset);
+      // waiting screen main character: sparkling eyes
+      document.getElementById("char1").src = characters[3];
+
+      // menu decorations (no sparkling eyes on menu)
+      document.getElementById("menuChar2").src = characters[4];
+      document.getElementById("menuCharRight").src = characters[1]; // thumbs up on the right
+      // cart decoration removed
+
+      // pay bottom-right character
+      document.getElementById("payChar").src = characters[0];
+
+      // done screen background characters
+      document.getElementById("doneChar1").src = characters[2];
+      document.getElementById("doneChar2").src = characters[4];
+      document.getElementById("doneChar3").src = characters[1];
+      document.getElementById("doneChar4").src = characters[0];
+      document.getElementById("doneChar5").src = characters[3];
+      document.getElementById("doneChar6").src = characters[2];
+      renderPhoneValue("");
+      renderSet();
+      renderJeon();
+      renderAde();
+      renderCart();
+
+      function refreshWaitingCount() {
+        fetch(asset("/api/waiting/pending-count"))
+          .then(async (r) => {
+            if (!r.ok) throw new Error(await r.text());
+            return r.text();
+          })
+          .then((txt) => {
+            const n = Number(txt);
+            if (!Number.isFinite(n)) return;
+            waitingNo2El.textContent = `현재 웨이팅 ${n} 팀`;
+          })
+          .catch(() => {});
+      }
+    </script>
+  </body>
+</html>
+
