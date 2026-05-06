@@ -18,5 +18,7 @@ public interface WaitingTicketRepository extends JpaRepository<WaitingTicketEnti
     List<WaitingTicketEntity> findByBusinessDateAndStatusOrderByCompletedAtDesc(LocalDate businessDate, WaitingStatus status);
 
     long countByBusinessDateAndStatus(LocalDate businessDate, WaitingStatus status);
+
+    long countByBusinessDateAndStatusNot(LocalDate businessDate, WaitingStatus status);
 }
 

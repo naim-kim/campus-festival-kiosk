@@ -87,6 +87,7 @@ public class OrderApiController {
         ticket.orderId = order.id;
         ticket.businessDate = businessDate;
         ticket.waitingNumber = next;
+        ticket.status = com.csee.hgu.menu.waiting.domain.WaitingStatus.CONFIRMED;
         WaitingTicketEntity savedTicket = waitingTicketRepository.save(ticket);
 
         return new MarkPaidResponse(order.id, savedTicket.waitingNumber, savedTicket.id);

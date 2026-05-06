@@ -49,7 +49,7 @@ public class CookApiController {
                 ? LocalDate.now(KOREA)
                 : LocalDate.parse(date.trim());
         List<WaitingTicketEntity> tickets;
-        if (st == WaitingStatus.COMPLETED) {
+        if (st == WaitingStatus.PICKED_UP) {
             tickets = waitingTicketRepository.findByBusinessDateAndStatusOrderByCompletedAtDesc(targetDate, st);
         } else {
             tickets = waitingTicketRepository.findByBusinessDateAndStatusOrderByWaitingNumberAsc(targetDate, st);
@@ -64,9 +64,9 @@ public class CookApiController {
         return out;
     }
 
-    @PostMapping("/tickets/{ticketId}/complete")
+    @PostMapping("/tickets/{ticketId}/cooked")
     @Transactional
-    public CookTicketDto complete(@PathVariable Long ticketId) {
+    public CookTicketDto cooked(@PathVariable Long ticketId) {
         WaitingTicketEntity ticket = waitingTicketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ticket not found"));
 
@@ -74,12 +74,32 @@ public class CookApiController {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ticket cancelled");
         }
 
-        ticket.status = WaitingStatus.COMPLETED;
+        ticket.status = WaitingStatus.COOKED;
         ticket.completedAt = Instant.now();
 
         OrderEntity order = orderRepository.findWithItemsById(ticket.orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "order missing for ticket"));
 
+        return toDto(ticket, order);
+    }
+
+    @PostMapping("/tickets/{ticketId}/picked-up")
+    @Transactional
+    public CookTicketDto pickedUp(@PathVariable Long ticketId) {
+        WaitingTicketEntity ticket = waitingTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "ticket not found"));
+
+        if (ticket.status == WaitingStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "ticket cancelled");
+        }
+
+        ticket.status = WaitingStatus.PICKED_UP;
+        if (ticket.completedAt == null) {
+            ticket.completedAt = Instant.now();
+        }
+
+        OrderEntity order = orderRepository.findWithItemsById(ticket.orderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "order missing for ticket"));
         return toDto(ticket, order);
     }
 

@@ -47,7 +47,8 @@ public class WaitingApiController {
 
     @GetMapping("/waiting/pending-count")
     public long pendingCount() {
-        return waitingTicketRepository.countByBusinessDateAndStatus(LocalDate.now(KOREA), WaitingStatus.CONFIRMED);
+        // "현재 웨이팅" = 아직 수령 완료되지 않은 팀 수
+        return waitingTicketRepository.countByBusinessDateAndStatusNot(LocalDate.now(KOREA), WaitingStatus.PICKED_UP);
     }
 }
 
