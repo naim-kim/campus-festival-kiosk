@@ -264,7 +264,7 @@
         min-height: 520px;
       }
       .dialogLeft, .dialogRight { padding: 18px; }
-      .dialogLeft { background: #0b1220; color: white; }
+      .dialogLeft { background: #0b1220; color: white; text-align: center; }
       .dialogLeft h2 { margin: 0 0 10px; font-size: 22px; }
       .dialogLeft p { margin: 0; color: rgba(255,255,255,0.8); line-height: 1.5; }
       .waitingBox { margin-top: 18px; padding: 0; border: none; }
@@ -280,12 +280,13 @@
       }
       .waitingHero {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
         margin-top: 12px;
       }
-      .waitingHeroText { flex: 1; }
+      .waitingHeroText { width: 100%; }
       img.waitingHeroChar { width: 110px; height: 110px; object-fit: contain; border: none; background: transparent; }
       .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
       .key { padding: 16px 0; border-radius: 14px; border: 1px solid var(--border); background: #fff; font-size: 18px; font-weight: 900; cursor: pointer; }
@@ -319,7 +320,11 @@
       }
 
       /* Waiting screen: make input+button match keypad width */
-      #waitingScreen .dialogRight { display: grid; grid-template-rows: auto auto 1fr auto auto; }
+      #waitingScreen .dialogRight {
+        --phone-font: clamp(26px, 6.2vw, 44px);
+        display: grid;
+        grid-template-rows: auto auto 1fr auto auto;
+      }
       #waitingScreen .phoneRow { width: 100%; }
       #waitingScreen .keypad { width: 100%; }
       #waitingScreen .actionsRow { width: 100%; }
@@ -338,12 +343,16 @@
       #waitingScreen .phoneHelper {
         margin-top: 8px;
         color: var(--muted);
-        font-size: 28px;
+        font-size: calc(var(--phone-font) * 0.62);
         font-weight: 800;
         text-align: center;
+        width: 100%;
+        line-height: 1.15;
       }
-      #waitingScreen .phoneInput { text-align: left; }
-      #waitingScreen .phoneInput.centered { text-align: center; font-size: clamp(20px, 4.6vw, 32px); }
+      #waitingScreen .phoneInput {
+        text-align: center;
+        font-size: var(--phone-font);
+      }
 
       #waitingScreen .characterRow { justify-content: center; }
 
@@ -690,6 +699,7 @@
           const selectedAddons = new Set(state.setFlavor ? [`set_flavor_${state.setFlavor}`] : []);
           renderCards(setAddonEl, MENU.setAddons, {
             selectedIds: selectedAddons,
+            showPrice: false,
             onClick: (item) => {
               const next = item.id.replace("set_flavor_", "");
               state.setFlavor = (state.setFlavor === next) ? null : next;
@@ -791,6 +801,7 @@
           const selectedAddons = new Set(state.jeonFlavor ? [`jeon_flavor_${state.jeonFlavor}`] : []);
           renderCards(jeonAddonEl, MENU.jeonAddons, {
             selectedIds: selectedAddons,
+            showPrice: false,
             onClick: (item) => {
               const next = item.id.replace("jeon_flavor_", "");
               state.jeonFlavor = (state.jeonFlavor === next) ? null : next;
@@ -995,9 +1006,6 @@
       function renderPhoneValue(tailDigits) {
         const t = (tailDigits || "").slice(0, 8);
         let shown = (t.length <= 4) ? `010-${t}` : `010-${t.slice(0,4)}-${t.slice(4)}`;
-
-        if (t.length === 8) phoneInput.classList.add("centered");
-        else phoneInput.classList.remove("centered");
 
         if (t.length === 8) shown = shown.replaceAll("-", " - ");
 
