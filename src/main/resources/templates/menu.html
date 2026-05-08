@@ -321,12 +321,19 @@
 
       /* Waiting screen: make input+button match keypad width */
       #waitingScreen .dialogRight {
-        --phone-font: clamp(26px, 6.2vw, 44px);
+        /* Keep 010-####-#### fully visible on small screens */
+        --phone-font: clamp(20px, 5.2vw, 34px);
         display: grid;
-        grid-template-rows: auto auto 1fr auto auto;
+        grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+        min-height: 0;
       }
       #waitingScreen .phoneRow { width: 100%; }
-      #waitingScreen .keypad { width: 100%; }
+      #waitingScreen .keypad {
+        width: 100%;
+        min-height: 0;
+        overflow: auto;
+        align-content: start;
+      }
       #waitingScreen .actionsRow { width: 100%; }
       #waitingScreen #waitingBtn {
         width: 100%;
@@ -336,14 +343,17 @@
       }
       #waitingScreen .closeCorner {
         position: fixed;
-        top: 14px;
-        right: 14px;
+        top: 10px;
+        right: 10px;
         z-index: 30;
+        padding: 8px 10px;
+        border-radius: 12px;
+        font-size: 13px;
       }
       #waitingScreen .phoneHelper {
-        margin-top: 8px;
+        margin-top: 0;
         color: var(--muted);
-        font-size: calc(var(--phone-font) * 0.62);
+        font-size: calc(var(--phone-font) * 0.322);
         font-weight: 800;
         text-align: center;
         width: 100%;
@@ -352,6 +362,13 @@
       #waitingScreen .phoneInput {
         text-align: center;
         font-size: var(--phone-font);
+        padding: 6px 8px;
+        letter-spacing: -0.5px;
+      }
+      #waitingScreen .sectionTitle {
+        margin: 8px 0 6px;
+        font-size: 13px;
+        font-weight: 900;
       }
 
       #waitingScreen .characterRow { justify-content: center; }
@@ -620,7 +637,7 @@
         set_flavor_cheese: "/assets/flavors/cheese_flavor.png",
         set_flavor_honey: "/assets/flavors/honey_butter.png",
         jeon_basic: "/assets/single_menu/basic_size.png",
-        jeon_big: "/assets/big_size.png",
+        jeon_big: "/assets/single_menu/big_size.png",
         jeon_cheese: "/assets/flavors/cheese_flavor.png",
         jeon_cheese_addon: "/assets/flavors/cheese_flavor.png",
         jeon_flavor_cheese: "/assets/flavors/cheese_flavor.png",
@@ -632,7 +649,7 @@
         top_honey: "/assets/toppings/HoneyButter.png"
       };
 
-      const RATIO_4_5 = new Set(["set_big"]);
+      const RATIO_4_5 = new Set([]);
 
       function renderCards(container, items, { selectedIds = new Set(), onClick, showPrice = true }) {
         container.innerHTML = "";
