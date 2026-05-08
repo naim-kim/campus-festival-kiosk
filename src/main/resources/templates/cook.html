@@ -60,6 +60,25 @@
       .btn.blue { background: rgba(1,92,181,0.18); border-color: rgba(1,92,181,0.40); }
       .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+      .section {
+        margin-top: 12px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: rgba(255,255,255,0.02);
+        overflow: hidden;
+      }
+      .sectionHead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px 12px;
+        background: rgba(255,255,255,0.03);
+        border-bottom: 1px solid var(--border);
+      }
+      .sectionTitle { font-weight: 1000; font-size: 16px; }
+      .sectionRight { display: flex; align-items: center; gap: 8px; }
+
       .list { display: grid; gap: 10px; margin-top: 12px; }
       .card {
         border: 1px solid var(--border);
@@ -110,16 +129,21 @@
           <div style="font-size:14px; color:var(--muted); font-weight:900;" id="subline">오늘 주문 · 수동 새로고침</div>
         </div>
         <div class="tabs topControls">
-          <button class="tabBtn active" data-status="CONFIRMED">접수 완</button>
-          <button class="tabBtn" data-status="COOKED">조리 완</button>
-          <button class="tabBtn" data-status="PICKED_UP">수령 완</button>
+          <button class="tabBtn active" data-view="ACTIVE">진행중</button>
+          <button class="tabBtn" data-view="PICKED_UP">수령 완</button>
         </div>
         <div class="topActions">
           <button class="btn" id="refreshBtn">새로고침</button>
         </div>
       </div>
 
-      <div class="list" id="list"></div>
+      <div id="activeView">
+        <div class="list" id="activeList"></div>
+      </div>
+
+      <div id="pickedView" style="display:none;">
+        <div class="list" id="pickedList"></div>
+      </div>
     </div>
 
     <div class="modalBg" id="modalBg" role="dialog" aria-modal="true">
@@ -141,10 +165,15 @@
       const APP_BASE = (document.querySelector('meta[name="app-base"]')?.content || "/").replace(/\/$/, "");
       const api = (p) => `${APP_BASE}${p.startsWith("/") ? "" : "/"}${p}`;
 
-      let currentStatus = "CONFIRMED";
+      let currentView = "ACTIVE"; // ACTIVE | PICKED_UP
       let lastCompletedTicket = null;
 
-      const listEl = document.getElementById("list");
+      const activeViewEl = document.getElementById("activeView");
+      const pickedViewEl = document.getElementById("pickedView");
+
+      const activeListEl = document.getElementById("activeList");
+      const pickedListEl = document.getElementById("pickedList");
+
       const modalBg = document.getElementById("modalBg");
       const msgBox = document.getElementById("msgBox");
       const smsBtn = document.getElementById("smsBtn");
@@ -167,29 +196,23 @@
         return lines.join("\n");
       }
 
-      function render(tickets) {
-        listEl.innerHTML = "";
-        const subline = document.getElementById("subline");
-        if (currentStatus === "PICKED_UP") {
-          const sum = tickets.reduce((s, t) => s + (t.totalPrice || 0), 0);
-          subline.textContent = `오늘 완료 ${tickets.length}건 · 매출 ${sum.toLocaleString("ko-KR")}원`;
-        } else {
-          subline.textContent = "오늘 주문 · 수동 새로고침";
-        }
-        if (!tickets.length) {
-          const empty = document.createElement("div");
-          empty.className = "card";
-          empty.innerHTML = `<div class="meta">표시할 주문이 없습니다.</div>`;
-          listEl.appendChild(empty);
-          return;
-        }
+      function renderEmpty(container, text) {
+        container.innerHTML = "";
+        const empty = document.createElement("div");
+        empty.className = "card";
+        empty.innerHTML = `<div class="meta">${text}</div>`;
+        container.appendChild(empty);
+      }
 
-        for (const t of tickets) {
+      function renderList(container, tickets, status) {
+        container.innerHTML = "";
+        const subline = document.getElementById("subline");
+        for (const t of (tickets || [])) {
           const card = document.createElement("div");
           card.className = "card";
 
-          const timeLabel = currentStatus === "PICKED_UP" ? "완료" : "주문";
-          const timeVal = currentStatus === "PICKED_UP" ? fmtTime(t.completedAt) : fmtTime(t.orderedAt);
+          const timeLabel = status === "PICKED_UP" ? "완료" : "주문";
+          const timeVal = status === "PICKED_UP" ? fmtTime(t.completedAt) : fmtTime(t.orderedAt);
 
           card.innerHTML = `
             <div class="row">
@@ -198,13 +221,13 @@
                 <div class="meta">${timeLabel} 시간: ${timeVal}${t.phoneNumber ? `\n전화: ${t.phoneNumber}` : ""}</div>
               </div>
               <div style="display:flex; gap:10px; align-items:flex-start;">
-                <span class="pill">${currentStatus === "PICKED_UP" ? "완" : (currentStatus === "COOKED" ? "조리 완" : "접수 완")}</span>
+                <span class="pill">${status === "PICKED_UP" ? "완" : (status === "COOKED" ? "조리 완" : "접수 완")}</span>
               </div>
             </div>
             <div class="items"><b>메뉴</b>\n${buildItemLines(t)}</div>
-            ${currentStatus === "CONFIRMED" ? `<button class="btn ok" data-action="cooked" data-id="${t.ticketId}">조리 완</button>` : ""}
-            ${currentStatus === "COOKED" ? `<button class="btn ok" data-action="pickedup" data-id="${t.ticketId}">수령 완</button>` : ""}
-            ${(currentStatus === "COOKED" || currentStatus === "PICKED_UP") ? `<button class="btn blue" data-action="reopen" data-id="${t.ticketId}">접수로</button>` : ""}
+            ${status === "CONFIRMED" ? `<button class="btn ok" data-action="cooked" data-id="${t.ticketId}">조리 완</button>` : ""}
+            ${status === "COOKED" ? `<button class="btn ok" data-action="pickedup" data-id="${t.ticketId}">수령 완</button>` : ""}
+            ${(status === "COOKED" || status === "PICKED_UP") ? `<button class="btn blue" data-action="reopen" data-id="${t.ticketId}">접수로</button>` : ""}
           `;
 
           card.querySelectorAll('button[data-action="cooked"]').forEach(btn => {
@@ -254,12 +277,100 @@
             });
           });
 
-          listEl.appendChild(card);
+          container.appendChild(card);
+        }
+
+        if (!tickets || !tickets.length) {
+          renderEmpty(container, "표시할 주문이 없습니다.");
+        }
+      }
+
+      function renderActive(tickets) {
+        activeListEl.innerHTML = "";
+        if (!tickets.length) {
+          renderEmpty(activeListEl, "표시할 주문이 없습니다.");
+          return;
+        }
+
+        for (const t of tickets) {
+          const status = t._status;
+          const card = document.createElement("div");
+          card.className = "card";
+
+          const timeLabel = "주문";
+          const timeVal = fmtTime(t.orderedAt);
+          const pillText = status === "COOKED" ? "조리 완" : "접수 완";
+
+          card.innerHTML = `
+            <div class="row">
+              <div>
+                <div class="bigNo">${t.waitingNumber}</div>
+                <div class="meta">${timeLabel} 시간: ${timeVal}${t.phoneNumber ? `\n전화: ${t.phoneNumber}` : ""}</div>
+              </div>
+              <div style="display:flex; gap:10px; align-items:flex-start;">
+                <span class="pill">${pillText}</span>
+              </div>
+            </div>
+            <div class="items"><b>메뉴</b>\n${buildItemLines(t)}</div>
+            ${status === "CONFIRMED" ? `<button class="btn ok" data-action="cooked" data-id="${t.ticketId}">조리 완</button>` : ""}
+            ${status === "COOKED" ? `<button class="btn ok" data-action="pickedup" data-id="${t.ticketId}">수령 완</button>` : ""}
+            ${status === "COOKED" ? `<button class="btn blue" data-action="reopen" data-id="${t.ticketId}">접수로</button>` : ""}
+          `;
+
+          // wire actions (same as renderList)
+          card.querySelectorAll('button[data-action="cooked"]').forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                const done = await fetch(api(`/api/cook/tickets/${btn.dataset.id}/cooked`), { method: "POST" })
+                  .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+                lastCompletedTicket = done;
+                openDoneModal(done);
+                await load();
+              } catch (e) {
+                alert("완료 처리 실패: " + e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+
+          card.querySelectorAll('button[data-action="pickedup"]').forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                await fetch(api(`/api/cook/tickets/${btn.dataset.id}/picked-up`), { method: "POST" })
+                  .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+                await load();
+              } catch (e) {
+                alert("상태 변경 실패: " + e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+
+          card.querySelectorAll('button[data-action="reopen"]').forEach(btn => {
+            btn.addEventListener("click", async () => {
+              btn.disabled = true;
+              try {
+                await fetch(api(`/api/cook/tickets/${btn.dataset.id}/reopen`), { method: "POST" })
+                  .then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+                await load();
+              } catch (e) {
+                alert("상태 변경 실패: " + e);
+              } finally {
+                btn.disabled = false;
+              }
+            });
+          });
+
+          activeListEl.appendChild(card);
         }
       }
 
       function openDoneModal(ticket) {
-        const msg = `[${ticket.waitingNumber}번]님!\n기다리던 옥수수전… 나왔습니다 😏🌽🔥`;
+        const msg = `[${ticket.waitingNumber}번]님!\n🔥 따끈따끈 옥수수전 나왔습니다!! 🌽\n안 오시면 제가 책임지고 처리하겠습니다 후후😋`;
         msgBox.textContent = msg;
 
         if (ticket.phoneNumber) {
@@ -279,9 +390,29 @@
       }
 
       async function load() {
-        const url = api(`/api/cook/tickets?status=${encodeURIComponent(currentStatus)}`);
-        const tickets = await fetch(url).then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
-        render(tickets);
+        const subline = document.getElementById("subline");
+
+        if (currentView === "ACTIVE") {
+          subline.textContent = "오늘 주문 · 수동 새로고침";
+          const [confirmed, cooked] = await Promise.all([
+            fetch(api(`/api/cook/tickets?status=CONFIRMED`)).then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t))),
+            fetch(api(`/api/cook/tickets?status=COOKED`)).then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t))),
+          ]);
+          const cookedTagged = (cooked || []).map(t => ({ ...t, _status: "COOKED" }));
+          const confirmedTagged = (confirmed || []).map(t => ({ ...t, _status: "CONFIRMED" }));
+
+          // show COOKED first, then CONFIRMED; within each, by waitingNumber asc
+          cookedTagged.sort((a,b) => (a.waitingNumber||0) - (b.waitingNumber||0));
+          confirmedTagged.sort((a,b) => (a.waitingNumber||0) - (b.waitingNumber||0));
+          renderActive([...cookedTagged, ...confirmedTagged]);
+          return;
+        }
+
+        // PICKED_UP
+        const picked = await fetch(api(`/api/cook/tickets?status=PICKED_UP`)).then(r => r.ok ? r.json() : r.text().then(t => Promise.reject(t)));
+        const sum = (picked || []).reduce((s, t) => s + (t.totalPrice || 0), 0);
+        subline.textContent = `오늘 완료 ${picked.length}건 · 매출 ${sum.toLocaleString("ko-KR")}원`;
+        renderList(pickedListEl, picked, "PICKED_UP");
       }
 
       async function loadRevenue() {
@@ -290,7 +421,7 @@
           if (!r.ok) return;
           const data = await r.json();
           const subline = document.getElementById("subline");
-          if (currentStatus === "PICKED_UP") {
+          if (currentView === "PICKED_UP") {
             const today = Number(data.todayRevenue || 0);
             const total = Number(data.totalRevenue || 0);
             subline.textContent = `오늘 완료 · 오늘 매출 ${today.toLocaleString("ko-KR")}원 · 전체 매출 ${total.toLocaleString("ko-KR")}원`;
@@ -302,7 +433,9 @@
         btn.addEventListener("click", async () => {
           document.querySelectorAll(".tabBtn").forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
-          currentStatus = btn.dataset.status;
+          currentView = btn.dataset.view;
+          activeViewEl.style.display = (currentView === "ACTIVE") ? "" : "none";
+          pickedViewEl.style.display = (currentView === "PICKED_UP") ? "" : "none";
           await load();
           await loadRevenue();
         });
