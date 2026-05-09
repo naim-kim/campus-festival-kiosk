@@ -1,9 +1,9 @@
--- MySQL schema for naimkim_1 menu 주문/웨이팅
+-- MySQL schema for 1 menu 주문/웨이팅
 -- Run on MySQL (InnoDB). Recommended DB charset: utf8mb4.
 
 -- 0) Optional: create database
--- CREATE DATABASE IF NOT EXISTS naimkim_menu DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
--- USE naimkim_menu;
+-- CREATE DATABASE IF NOT EXISTS menu DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+-- USE menu;
 
 -- 1) Orders (결제 전/후 상태 + 총액)
 CREATE TABLE IF NOT EXISTS orders (
