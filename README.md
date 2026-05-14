@@ -1,6 +1,6 @@
-# Miileage
+# Camput Festival Kiosk
 
-Miileage is a Spring Boot web application for a corn menu ordering and waiting-number flow. The app includes customer-facing menu pages, order APIs, waiting-ticket logic, and a cook dashboard for managing prepared and picked-up orders.
+Camput Festival Kiosk is a Spring Boot web application for a corn menu ordering and waiting-number flow. The app includes customer-facing menu pages, order APIs, waiting-ticket logic, and a cook dashboard for managing prepared and picked-up orders.
 
 ## Screenshots
 
@@ -54,7 +54,7 @@ From the `/cook` dashboard, staff can press the "조리완" action when an order
 ## Project Structure
 
 ```text
-mileage/
+Camput Festival Kiosk/
 |-- src/
 |   |-- main/
 |   |   |-- java/com/csee/hgu/menu/
