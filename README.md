@@ -26,7 +26,7 @@ Add screenshots to `docs/screenshots/` and replace the placeholder paths below.
 
 ### Customer Message
 
-![Customer message screenshot](docs/screenshots/customer_message.png)
+![Customer message screenshot](docs/screenshots/customer-message.png)
 
 From the `/cook` dashboard, staff can press the "조리완" action when an order is finished. The web app opens the phone's default message app on iPhone or Android with the customer's phone number and a prepared pickup message filled in, so staff can quickly notify the customer that the order is ready.
 
