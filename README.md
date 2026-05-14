@@ -6,12 +6,6 @@ Miileage is a Spring Boot web application for a corn menu ordering and waiting-n
 
 Add screenshots to `docs/screenshots/` and replace the placeholder paths below.
 
-### Home Page
-
-![Home page screenshot](docs/screenshots/home-page.png)
-
-> TODO: Add a screenshot of `/`.
-
 ### Customer Menu
 
 ![Customer menu screenshot](docs/screenshots/customer-menu.png)
@@ -29,6 +23,12 @@ Add screenshots to `docs/screenshots/` and replace the placeholder paths below.
 ![Cook dashboard screenshot](docs/screenshots/cook-dashboard.png)
 
 > TODO: Add a screenshot of `/cook`.
+
+### Customer Message
+
+![Customer message screenshot](docs/screenshots/customer_message.png)
+
+From the `/cook` dashboard, staff can press the "조리완" action when an order is finished. The web app opens the phone's default message app on iPhone or Android with the customer's phone number and a prepared pickup message filled in, so staff can quickly notify the customer that the order is ready.
 
 ## Tech Stack
 
@@ -89,33 +89,34 @@ mileage/
 - Automatic waiting-number creation after payment
 - Waiting-ticket confirmation with optional phone number
 - Cook dashboard for confirmed, cooked, and picked-up tickets
+- Customer message handoff from the cook dashboard to the phone's SMS app
 - Revenue summary endpoint
 - Database schema/reference SQL in `docs/MENU_DB.sql`
 
 ## Pages
 
-| Route | Description |
-| --- | --- |
-| `/` | Home page |
+| Route   | Description                  |
+| ------- | ---------------------------- |
+| `/`     | Home page                    |
 | `/menu` | Customer menu and order page |
-| `/cook` | Cook dashboard |
+| `/cook` | Cook dashboard               |
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-| --- | --- | --- |
-| `GET` | `/hello` | Simple backend health/demo response |
-| `POST` | `/api/orders` | Create a new order |
-| `POST` | `/api/orders/{orderId}/paid` | Mark an order as paid and create a waiting ticket |
-| `GET` | `/api/orders/{orderId}` | Fetch an order for testing/debugging |
-| `GET` | `/api/waiting/current` | Get the current waiting number for today |
-| `POST` | `/api/waiting/{ticketId}/confirm` | Confirm a waiting ticket and optionally save a phone number |
-| `GET` | `/api/waiting/pending-count` | Count tickets that are not picked up |
-| `GET` | `/api/cook/tickets?status=CONFIRMED` | List cook tickets by status |
-| `POST` | `/api/cook/tickets/{ticketId}/cooked` | Mark a ticket as cooked |
-| `POST` | `/api/cook/tickets/{ticketId}/picked-up` | Mark a ticket as picked up |
-| `POST` | `/api/cook/tickets/{ticketId}/reopen` | Move a ticket back to confirmed |
-| `GET` | `/api/cook/revenue` | Get today and total revenue |
+| Method | Endpoint                                 | Description                                                 |
+| ------ | ---------------------------------------- | ----------------------------------------------------------- |
+| `GET`  | `/hello`                                 | Simple backend health/demo response                         |
+| `POST` | `/api/orders`                            | Create a new order                                          |
+| `POST` | `/api/orders/{orderId}/paid`             | Mark an order as paid and create a waiting ticket           |
+| `GET`  | `/api/orders/{orderId}`                  | Fetch an order for testing/debugging                        |
+| `GET`  | `/api/waiting/current`                   | Get the current waiting number for today                    |
+| `POST` | `/api/waiting/{ticketId}/confirm`        | Confirm a waiting ticket and optionally save a phone number |
+| `GET`  | `/api/waiting/pending-count`             | Count tickets that are not picked up                        |
+| `GET`  | `/api/cook/tickets?status=CONFIRMED`     | List cook tickets by status                                 |
+| `POST` | `/api/cook/tickets/{ticketId}/cooked`    | Mark a ticket as cooked                                     |
+| `POST` | `/api/cook/tickets/{ticketId}/picked-up` | Mark a ticket as picked up                                  |
+| `POST` | `/api/cook/tickets/{ticketId}/reopen`    | Move a ticket back to confirmed                             |
+| `GET`  | `/api/cook/revenue`                      | Get today and total revenue                                 |
 
 ## Prerequisites
 
